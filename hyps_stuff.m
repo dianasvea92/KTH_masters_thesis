@@ -1,0 +1,91 @@
+%% HYPERVENTILATION DATA
+%----------------------------------------
+%O2
+%BHhyps = [5,11,17,23,28,33,38,43,48,54,60,65,70,76,82,88,93]; %all every one BH
+BHhyps = [5,11,17,28,33,38,43,48,54,60,70,76,82,88,93]; %removed some weird looking or super noisy datasets
+% butter_nums = [2, 0.03]; %went through pt selection, looks ok, some extras in there, maybe 2 sets missing 2 or 3 pts each
+% %------------BEFORE YOU RUN NEXT LINE MAKE SURE YOU BUTTER NOT MOVING AVG IN EXTRACTINGPOINTS.M---------------------------------
+% [allBHO2_hyps,O2measurements_hyps, O2meas_locs_hyps, normdPAO2_hyps, normdO2locs_hyps,O2cov_hyps,O2corrcoef_hyps,mycoeffs_hyps,rsq_O2_hyps] = HV_trials_O2_fit(BHhyps,butter_nums,raw_data, trial_data);
+% %CO2
+% butter_nums = [2,0.08];
+% nonlin_quad = @(x,xdata)(x(1)*(xdata.^2)) + (x(2)*xdata) + x(3);
+% d = 2;
+% xo = [0,0,avg_startCO2]; %this when t = 0, solves quad eqn for avg of all CO2 starting pts, converges anyway
+% [allBHCO2_hyps,CO2measurements_hyps, CO2meas_locs_hyps, normdPACO2_hyps, normdCO2locs_hyps,CO2corrcoef_hyps,mycoeffsCO2_hyps,rsq_CO2_hyps] = HV_trials_CO2_fit(BHhyps,butter_nums,raw_data, trial_data,nonlin_quad,xo,d);
+
+%% calculating extra oxygen
+%startnewsubj = [1,7,13,19,24,29,34,39,44,50,56,61,66,72,78,84,89,95]; %mark beginning of new subj
+startnewsubj = [1,7,13,19,29,34,39,44,50,56,61,72,78,84,89]; 
+%remove 24, 66, 95 (these not included in hyps trials, corresponds to index 5, 13, and 18
+qualdata = survey_data(startnewsubj,:);
+%want to calculate how much CO2 we blew off in hyperventilation, bc now we can assume that's O2
+BHhyps2 = [0,BHhyps];
+currdiff = zeros(1,length(BHhyps));
+
+new_FRCcol = zeros(length(startnewsubj),1);
+for i = 1:length(startnewsubj)
+    h = qualdata(i, 5);
+    a = qualdata(i, 4);
+    if a<25
+        a = 25;
+    end
+    mf = qualdata(i,7);
+    if mf == 1
+        %male
+        FRC = (2.34*(h/100)) + (0.01*a) - 1.09;
+    else
+        %female
+        FRC = (2.24*(h/100)) + (0.001*a) - 1;
+    end
+    new_FRCcol(i) = FRC;  
+end
+
+diffs = [];
+regBHnums = [];
+subjnums = [];
+for i = 1:length(BHhyps)
+    currmean = mean(trial_data(BHhyps2(i)+1 : BHhyps(i) - 1,25));
+    b = trial_data(BHhyps2(i)+1 : BHhyps(i) - 1,25);
+    c = [BHhyps2(i)+1 : BHhyps(i) - 1];
+    d = ones(size(new_FRCcol)).*startnewsubj(i);
+    currdiff(i) = currmean - trial_data(BHhyps(i),25); %this is difference in partial pressures
+    diffs = [diffs; b-trial_data(BHhyps(i),25)];
+    regBHnums = [regBHnums, c];
+    subjnums = [subjnums;d];
+end
+
+%remember diffs is a vector with all the differences between normal trials and their respective hyperventilation trial
+bhVo2 = zeros(1,length(diffs));
+bhVo2_end = zeros(1,length(diffs));
+Vo2withH = zeros(1,length(diffs));
+rate_consumed = zeros(1,length(diffs));
+for ii = 1:length(diffs)
+    bhVo2(ii) = (quandata(regBHnums(ii),1) + new_FRCcol(find(startnewsubj == subjnums(ii))))*(trial_data(regBHnums(ii),2)/(survey_data(regBHnums(ii),3)/10)); %this is max volume of O2 in the lungs at start of normal BH  based on last inhale
+    %at end of BH
+    bhVo2_end(ii) = (quandata(regBHnums(ii),1) + new_FRCcol(find(startnewsubj == subjnums(ii))))*(trial_data(regBHnums(ii),5)/(survey_data(regBHnums(ii),3)/10)); 
+    rate_consumed(ii) = -(bhVo2(ii)-bhVo2_end(ii))/trial_data(regBHnums(ii),12); %in L/s
+    Vo2withH(ii) = (quandata(regBHnums(ii),1) + new_FRCcol(find(startnewsubj == subjnums(ii))))*((trial_data(regBHnums(ii),2)+currdiff(find(startnewsubj == subjnums(ii))))/(survey_data(regBHnums(ii),3)/10));
+end
+
+consumedO2 = bhVo2-bhVo2_end;
+meanconsumed = mean(consumedO2)
+VO2hypdiff = [regBHnums; Vo2withH - bhVo2];
+[h,p] = ttest(Vo2withH - bhVo2)
+[r1, p1] = corrcoef(bhVo2,rate_consumed)
+
+%% does starting volume correlate to rate of consumption
+for jj = 1:length(currdiff)
+    HbhVo2(jj) = (quandata(BHhyps(jj),1) + new_FRCcol(jj))*(trial_data(BHhyps(jj),2)/(survey_data(BHhyps(jj),3)/10)); %this is max volume of O2 in the lungs at start of normal BH  based on last inhale
+    %at end of BH
+    HbhVo2_end(jj) = (quandata(BHhyps(jj),1) + new_FRCcol(jj))*(trial_data(BHhyps(jj),5)/(survey_data(BHhyps(jj),3)/10)); 
+    Hrate_consumed(jj) = -(bhVo2(jj)-bhVo2_end(jj))/trial_data(BHhyps(jj),12); %in L/s
+end
+
+newbhVo2 = [bhVo2,HbhVo2];
+newrate_consumed = [rate_consumed,Hrate_consumed];
+[r, p] = corrcoef(newbhVo2,newrate_consumed)
+
+
+
+
+

@@ -1,0 +1,54 @@
+function [HRs] = 
+%% lets do heart rate data
+close all
+%start with sample case
+%need to find the imported column from excel that has the pleth data (4th)
+BHnumber = 1;
+currentBH = raw_data{BHnumber};
+curr_HR = currentBH(:,4);
+delta = floor((max(curr_HR)-min(curr_HR(1:end-25)))/2) - 1;
+curr_time = currentBH(:,end);
+if trial_data(BHnumber,23) == 1
+   fifty_hund = 50;
+else
+   fifty_hund = 100;
+end
+
+[maxtab, mintab] = peakdet(curr_HR, delta, curr_time); %holy shit this amazing function
+
+figure
+plot(curr_time,curr_HR)
+hold on
+plot(maxtab(:,1),maxtab(:,2),'ko')
+%plot(mintab(:,1),mintab(:,2),'go'), really only need one (ill stick with max)
+
+%find time intervals between each beat
+for_sub = [maxtab(2:end,1)];
+for_sub = [for_sub;0]; %this last value just a dummy to make them same size
+pk2pk = for_sub-maxtab(:,1);
+pk2pk = pk2pk(1:end-1);
+%now have the time intervals between each beat
+HR1 = 60./pk2pk;
+hold on
+plot(HR1)
+title('Plethysmography and Continuous HR each beat')
+
+n = 4;
+i = 1;
+pk2pk_new = [];
+rate_locs = [];
+while i < length(pk2pk)
+    if i < length(pk2pk)-n
+        pk2pk_new = [pk2pk_new,sum(pk2pk(i:i+n-1))];
+        rate_locs = [rate_locs, maxtab(i+(n/2),1)];
+    end
+    i = i+n;
+end
+HR2 = (60*n)./pk2pk_new;
+hold on
+plot(rate_locs,HR2, 'g')
+
+
+
+
+
