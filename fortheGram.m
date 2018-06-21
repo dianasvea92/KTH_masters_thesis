@@ -11,13 +11,16 @@ startnewsubj = [1,7,13,19,24,29,34,39,44,50,56,61,66,72,78,84,89,95]; %mark begi
 %want to append a couple columns or one at a time with the key parameter
 %information included that helps define the cluster
 %----------------------------------------------------
-thebluepill = RERs(1:95); %change this RHS to choose which key parameter i want to cluster with
+thebluepill = RERs(1:94); %change this RHS to choose which key parameter i want to cluster with
 %----------------------------------------------------
-theredpill = survey_data(1:95,3:end);
+theredpill = survey_data(1:94,3:end);
+particips = {'p1', 'p1','p1', 'p1', 'p1', 'p1', 'p2','p2','p2','p2','p2','p2','p3','p3','p3','p3','p3','p3','p4','p4','p4','p4','p4','p5','p5','p5','p5','p5','p6','p6','p6','p6','p6','p7','p7','p7','p7','p7','p8','p8','p8','p8','p8','p9','p9','p9','p9','p9','p9','p10','p10','p10','p10','p10','p10','p11','p11','p11','p11','p11','p12','p12','p12','p12','p12','p13','p13','p13','p13','p13','p13','p14','p14','p14','p14','p14','p14','p15','p15','p15','p15','p15','p15','p16','p16','p16','p16','p16','p17','p17','p17','p17','p17','p17'}';
+
 
 nans = find(thebluepill == 9999);
 thebluepill(nans) = [];
 theredpill(nans,:) = [];
+particips(nans) = [];
 
 theMatrix = [theredpill,thebluepill];
 
@@ -38,6 +41,7 @@ means = zeros(1,k);
 stdevs = zeros(1,k);
 for m = 1:k
     clust = int_var(currInd{m});
+    clustp = particips([currInd{m}]);    
     subplot(1,k,m); histogram(clust);
     title(['Cluster ', num2str(m)], 'fontsize', 14)
     means(m) = mean(clust);
@@ -58,7 +62,7 @@ end
 %h=0 means we cannot reject the null, doesnt mean they have the same means,
 %just that our sample size might not be big enough to detect a difference
 
-set(gcf, 'Color', 'w');
-xlabel('Cluster Number', 'fontsize', 18);
-ylabel('RER',  'fontsize', 18);
-export_fig('C:/Users/Diana/Documents/MATLAB/thesis_figures/ANOVA_RERs', '-jpg', '-grey');
+%set(gcf, 'Color', 'w');
+%xlabel('Cluster Number', 'fontsize', 18);
+%ylabel('RER',  'fontsize', 18);
+%export_fig('C:/Users/Diana/Documents/MATLAB/thesis_figures/ANOVA_RERs', '-jpg', '-grey');

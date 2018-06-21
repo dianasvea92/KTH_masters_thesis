@@ -1,10 +1,11 @@
 %% HR analysis
 close all
-BHnumbers = [2:4,6:10,12:15,18,20,24,25,27,29:38,45:47,49:52,55,56,58,59,61:63,66:75,77,80,81,83,87,90,92,94,95,97,98]; %these only perfect BHs
+%BHnumbers = [2:4,6:10,12:15,18,20,24,25,27,29:38,45:47,49:52,55,56,58,59,61:63,66:75,77,80,81,83,87,90,92,94,95,97,98]; %these only perfect BHs
+BHnumbers = [2:4,7:10,20,29:32, 34:37,45:47,50:52,56,58,59,61:63,66:69,72:75,80,81,87,90,92]; %these only perfect BHs
 %BHnumbers = [1:98];
 %BHnumbers = [1:5];
 n = 6;
-HRs = HRcont(BHnumbers, raw_data, n); %is 1 by 98 cell, each has two rows, top is time, 2nd row is HR
+HRs = HRcont(BHnumbers, raw_data, n, CO2meas_locs, trial_data); %is 1 by 98 cell, each has two rows, top is time, 2nd row is HR
 smoothHRs = cell(1,length(BHnumbers));
 times = cell(1,length(BHnumbers));
 for i = 1:length(BHnumbers)
@@ -25,7 +26,7 @@ end
 
 %% now can work with smoothHRs...try to find maybe first min? does that time indicate anything?    
 %each is a continuous line based on 100 pts from linspace
-close all
+%close all
 minp = zeros(1,length(BHnumbers));
 time2min = zeros(1,length(BHnumbers));
 percHRdec = zeros(1,length(BHnumbers));
@@ -45,9 +46,56 @@ for j = 1:length(BHnumbers)
     minp(j) = MinIdx(1)/100;
     time2min(j) = minp(j)*currtime(end);
     maxp = maxInd/100;
-%     plot(currtime, currBH, 'r-', time2min(j), currBH(round(minp(j)*100)), 'ko', maxp*currtime(end), currMax, 'bo')
+    figure
+    plot(currtime, currBH, 'r-', time2min(j), currBH(round(minp(j)*100)), 'ko', maxp*currtime(end), currMax, 'bo')
     percHRdec(j) = (currMax - currBH(round(minp(j)*100)))/currMax;
 end
+
+%%
+time2min = time2min';
+HRlengthBH = trial_data(BHnumbers, 12);
+%below pulled from excel, averaged each person's trials together 
+time2minavg = [27.0098
+   39.9911
+   45.9760
+   33.0823
+  120.2494
+   83.4915
+   68.6067
+  125.7691
+   37.7007
+   94.5949
+   82.0813
+   78.8588
+   84.4888
+   21.6747];
+BHlengthsHRavg = [108.3333
+  125.7500
+   85.0000
+  126.5250
+  152.7150
+  165.0000
+  144.3333
+  191.9467
+   81.0000
+  142.0000
+  169.5000
+  130.0000
+  191.0000
+  163.0000];
+close all
+[r, p] = corrcoef(time2minavg,BHlengthsHRavg)
+
+avg_fraction = time2minavg./BHlengthsHRavg;
+figure
+hist(avg_fraction)
+%title('Percentage of BH time to reach minimum Heart Rate', 'fontsize', 14)
+xlabel('Time (s) to minimum HR as fraction of total BH length', 'fontsize', 14)
+ylabel('Number of BH', 'fontsize', 14)
+set(gcf, 'Color', 'w');
+%export_fig('C:/Users/Diana/Documents/MATLAB/thesis_figures/HRhist', '-jpg', '-grey');
+mymean = sum(avg_fraction)/length(avg_fraction)
+mystdev = std(avg_fraction)
 
 %% now have minp and time2min for each of all 98 breathholds
 % can see if there was a certain pattern in this that predicts end time
@@ -73,7 +121,7 @@ title('NRB: Time (s) to indicator')
 figure
 hist(minp)
 %title('Percentage of BH time to reach minimum Heart Rate', 'fontsize', 14)
-xlabel('Time (s) to minimum HR as percentage of total BH length', 'fontsize', 14)
+xlabel('Time (s) to minimum HR as fraction of total BH length', 'fontsize', 14)
 ylabel('Number of BH', 'fontsize', 14)
 set(gcf, 'Color', 'w');
 %export_fig('C:/Users/Diana/Documents/MATLAB/thesis_figures/HRind_example', '-jpg', '-grey');
